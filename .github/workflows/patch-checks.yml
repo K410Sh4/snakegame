@@ -79,6 +79,27 @@ jobs:
           } > /tmp/snakegame_mock_install.luau
           .luau-toolchain/build/luau /tmp/snakegame_mock_install.luau > /tmp/mock_output.txt
           grep -E '^\[MockStudio\]' /tmp/mock_output.txt
+      - name: Exercise installed paint cache with destructive lifecycle tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          server=Path("/tmp/SnakeGameServer.lua").read_text(encoding="utf-8")
+          begin="local function paint(s)"
+          end="local function reset(player)"
+          assert server.count(begin)==1 and server.count(end)==1, "paint/reset anchors changed"
+          body=server.split(begin,1)[1].split(end,1)[0]
+          assert "p.Parent~=segments" in body and "food.Parent~=model" in body
+          extracted="local function paint(s)"+body+"\n"
+          # The harness tests the real generated paint, not a copied algorithm.
+          harness=Path("tests/cache_recovery_behavior.luau").read_text(encoding="utf-8")
+          marker="-- Extracted paint(s) is inserted here by the workflow."
+          assert harness.count(marker)==1
+          Path("/tmp/cache_recovery_behavior.luau").write_text(harness.replace(marker,extracted),encoding="utf-8")
+          PY
+          .luau-toolchain/build/luau-compile /tmp/cache_recovery_behavior.luau >/dev/null
+          .luau-toolchain/build/luau /tmp/cache_recovery_behavior.luau
       - name: Compile final installed server/client Luau sources
         shell: bash
         run: |
