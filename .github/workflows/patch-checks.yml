@@ -1,0 +1,51 @@
+name: SnakeGame patch checks
+
+on:
+  push:
+    branches:
+      - main
+      - "integration/**"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-regression:
+    name: Canonical patch invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python static regression tests
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+
+  luau-syntax:
+    name: Compile all Luau patches
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout Luau compiler source
+        uses: actions/checkout@v4
+        with:
+          repository: luau-lang/luau
+          path: .luau-toolchain
+          fetch-depth: 1
+      - name: Configure Luau compiler
+        run: cmake -S .luau-toolchain -B .luau-toolchain/build -DCMAKE_BUILD_TYPE=Release
+      - name: Build official Luau CLI
+        run: cmake --build .luau-toolchain/build --target Luau.Compile.CLI -j2
+      - name: Compile every patch without executing Roblox services
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=0
+          for script in updates/*.lua; do
+            echo "Compiling $script"
+            .luau-toolchain/build/luau-compile "$script" >/dev/null
+            count=$((count + 1))
+          done
+          test "$count" -eq 18
+          echo "Compiled $count Luau files (syntax only; no Roblox Studio runtime)."
