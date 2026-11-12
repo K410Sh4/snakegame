@@ -59,17 +59,41 @@ jobs:
           done
           test "$count" -eq 20
           echo "Compiled 18 patch files and 2 embedded bootstrap scripts (syntax only)."
-      - name: Apply the 18 patches in a mocked Studio installer harness
+      - name: Apply and reapply all 18 patches in mocked Studio
         shell: bash
         run: |
           set -euo pipefail
           {
             cat tests/mock_studio_prelude.luau
             for script in updates/*.lua; do
-              printf '\ndo\n'
+              printf '\ndo\nlocal function applyPatch()\n'
               cat "$script"
-              printf '\nend\n'
+              printf '\nend\napplyPatch()\n'
+              case "$script" in
+                */0001_*) ;;
+                *) printf 'applyPatch()\n' ;;
+              esac
+              printf 'end\n'
             done
             cat tests/mock_studio_postlude.luau
           } > /tmp/snakegame_mock_install.luau
-          .luau-toolchain/build/luau /tmp/snakegame_mock_install.luau
+          .luau-toolchain/build/luau /tmp/snakegame_mock_install.luau > /tmp/mock_output.txt
+          grep -E '^\[MockStudio\]' /tmp/mock_output.txt
+      - name: Compile final installed server/client Luau sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          transcript=Path("/tmp/mock_output.txt").read_text(encoding="utf-8")
+          for role in ("SERVER", "CLIENT"):
+              begin=f"MOCK_SNAKE_{role}_SOURCE_START\n"
+              end=f"\nMOCK_SNAKE_{role}_SOURCE_END"
+              assert transcript.count(begin)==1 and transcript.count(end)==1, f"{role}: missing boundary"
+              body=transcript.split(begin,1)[1].split(end,1)[0]
+              assert len(body)>1000, f"{role}: suspiciously short generated source"
+              Path(f"/tmp/SnakeGame{role.title()}.lua").write_text(body, encoding="utf-8")
+          PY
+          .luau-toolchain/build/luau-compile /tmp/SnakeGameServer.lua >/dev/null
+          .luau-toolchain/build/luau-compile /tmp/SnakeGameClient.lua >/dev/null
+          echo "Final installed server/client source syntax: valid (not Studio runtime)."
