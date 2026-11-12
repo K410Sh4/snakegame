@@ -57,3 +57,37 @@ RELEASE GATE
 [ ] Attach reproducible test evidence and failures to issue #22.
 [ ] Distinguish Studio execution from CI mock results.
 [ ] Do not mark gameplay/mobile/multiplayer/performance validated until run.
+
+STUDIO PROCEDURE / EVIDENCE FORMAT
+[ ] Use Studio Test (F5) for single-client gameplay; toggle Client/Server to inspect
+    server-authoritative mode, score and skin. Do not infer server state from UI alone.
+[ ] Use Studio "Server & Clients" (F7) with 2 then 3 clients for isolation;
+    capture server Output and each client Output separately.
+[ ] Use Device Simulator for screen/touch layout only; a simulated mobile viewport
+    is NOT a real Android performance result.
+[ ] Use Network Simulator to record latency, jitter and packet-loss settings;
+    compare against baseline and document actual observed behavior.
+[ ] For each case record: case ID, patch chain SHA, place backup identifier,
+    Studio build, test mode, clients, steps, expected, observed, PASS/FAIL/BLOCKED,
+    Output/error stack, screenshot/video link and issue/PR link.
+
+OPTIONAL 0019 CANDIDATE — PR #25 ONLY (DO NOT APPLY TO MAIN BASELINE)
+[ ] In a disposable COPY of the place, apply 0001–0018 then the exact 0019
+    candidate from PR #25; record its head SHA and confirm all postchecks.
+[ ] In Play, after a snake and food are rendered, inspect the server-side snake
+    model and identify a current segment BasePart and current food BasePart.
+[ ] In a separate controlled run destroy one segment from the server-side model;
+    wait for the next server paint; check whether it is recreated, with correct
+    appearance, position, score and no Output error. Repeat for food.
+[ ] Repeat 10 destroy/recreate cycles for each part type; record instance counts
+    before/after and verify no accumulating duplicates or stale references.
+[ ] Compare candidate against 0018-only baseline. If no stable repro is possible,
+    mark BLOCKED with exact reproduction limitation, never PASS.
+[ ] Reapply 0019 in Edit on the disposable copy; verify idempotence and no duplicate
+    marker/parts/remotes. Test a precheck failure on a fresh copy without 0018;
+    verify the place is unchanged and the error is explicit.
+[ ] No merge approval for 0019 solely from mock assertions or compiler success.
+
+REFERENCES (consulted 2026-11-12)
+https://create.roblox.com/docs/studio/testing-modes
+https://create.roblox.com/docs/performance-optimization/microprofiler
