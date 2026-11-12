@@ -1,0 +1,59 @@
+SnakeGame — Roblox Studio manual QA gate (NOT YET EXECUTED)
+Baseline: main 949273e246ba2e3d090ec094fee97e9831bca26b
+Purpose: real Studio/device checks not covered by mock installers.
+Record: Studio version, OS/device, place version, date/time, tester, video/log,
+actual FPS and memory measurement method, result PASS/FAIL/BLOCKED for each case.
+
+SETUP
+[ ] Save backup of place; create empty test place, Edit mode (not Play).
+[ ] Confirm no existing SnakeGameServer/Client or GUI from prior installation.
+[ ] Apply updates/0001 through 0018 in ascending order in Command Bar, Edit mode.
+[ ] Check Output after EACH patch; capture first error with number and stack.
+[ ] Verify ServerScriptService/SnakeGameServer, StarterPlayerScripts/SnakeGameClient,
+    ReplicatedStorage/SnakeGame, StarterGui SnakeGameHUD/ModeSelect/SkinSelect.
+[ ] Reapply 0002 through 0018; verify no duplicate scripts, GUIs, remotes or connections.
+    0001 bootstrap is intentionally not part of this reapplication requirement.
+
+SOLO / CLASSIC — PLAY
+[ ] Start with one player. Confirm arena and snake visible; controls WASD/arrows.
+[ ] Eat food: score increases exactly once, length increases once, food respawns.
+[ ] Wall collision: one death, no continued movement/score; restart works.
+[ ] Self collision: death exactly once; no phantom food/segment after restart.
+[ ] Rapid alternating and reverse input: no illegal 180-degree turn or desync.
+[ ] Full board victory: won state displayed; no nil food or endless tick.
+
+CIRCULAR
+[ ] Select ModeCircular, verify server mode and circular bounds; ModeClassic switches back.
+[ ] Food only spawns inside valid circle; boundary collision kills consistently.
+[ ] Win state/score retained when switching modes or restarting.
+[ ] Malformed/oversized/unrecognized remote commands have no gameplay effect.
+[ ] Repeated mode changes obey server cooldown; separate player sessions unaffected.
+
+SKINS / HUD / INPUT
+[ ] Select Classic/Ember/Frost: correct server-authorized skin shown to all clients.
+[ ] Invalid skin command ignored; repeated commands rate limited.
+[ ] Desktop 16:9 and 4:3: HUD visible, readable, no overlap; Explorer edits respected.
+[ ] Mobile portrait and landscape emulator: touch swipe works and UI remains usable.
+[ ] While TextBox focused, swipe/keyboard gameplay input suppressed; after focus restored.
+[ ] Window focus loss/recovery clears stale swipe state; no stuck direction.
+
+MULTIPLAYER / SECURITY
+[ ] Start local server with 2 clients, then 3; each has isolated snake, arena and score.
+[ ] One client's death/restart/mode/skin change does not affect other players.
+[ ] Disconnect/reconnect: session and visuals cleaned up; no orphan parts or GUI.
+[ ] From test client send nil, number, table, long string, unknown command and spam
+    through existing remote; server does not error or grant unauthorized state.
+[ ] Repeat all critical tests with high simulated network latency; capture Output.
+
+PERFORMANCE (MEASURE; DO NOT GUESS)
+[ ] Capture baseline and 5-minute steady-state FPS, CPU frame time, Lua heap and
+    instance count on PC, using Studio MicroProfiler/Stats with methodology logged.
+[ ] Repeat on a real Android device with 6–8 GB RAM; record model, OS, graphics quality,
+    battery/thermal state, median/p95 frame time and peak memory where measurable.
+[ ] Compare idle, active, food-heavy and multiplayer scenes; check memory growth after
+    10 restart cycles and 10 join/leave cycles.
+
+RELEASE GATE
+[ ] Attach reproducible test evidence and failures to issue #22.
+[ ] Distinguish Studio execution from CI mock results.
+[ ] Do not mark gameplay/mobile/multiplayer/performance validated until run.
