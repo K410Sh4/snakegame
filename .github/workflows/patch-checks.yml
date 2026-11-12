@@ -105,7 +105,7 @@ jobs:
           from pathlib import Path
           server=Path("/tmp/SnakeGameServer.lua").read_text(encoding="utf-8")
           begin="local function paint(s)"
-          end="local function reset(player)"
+          end="local function reset(player, selectedMode)"
           assert server.count(begin)==1 and server.count(end)==1, "paint/reset anchors changed"
           body=server.split(begin,1)[1].split(end,1)[0]
           assert "p.Parent~=segments" in body and "food.Parent~=model" in body
