@@ -36,7 +36,7 @@ jobs:
       - name: Configure Luau compiler
         run: cmake -S .luau-toolchain -B .luau-toolchain/build -DCMAKE_BUILD_TYPE=Release
       - name: Build official Luau CLI
-        run: cmake --build .luau-toolchain/build --target Luau.Compile.CLI -j2
+        run: cmake --build .luau-toolchain/build --target Luau.Compile.CLI Luau.Repl.CLI -j2
       - name: Compile patch files and embedded bootstrap scripts
         shell: bash
         run: |
@@ -59,3 +59,17 @@ jobs:
           done
           test "$count" -eq 20
           echo "Compiled 18 patch files and 2 embedded bootstrap scripts (syntax only)."
+      - name: Apply the 18 patches in a mocked Studio installer harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            cat tests/mock_studio_prelude.luau
+            for script in updates/*.lua; do
+              printf '\ndo\n'
+              cat "$script"
+              printf '\nend\n'
+            done
+            cat tests/mock_studio_postlude.luau
+          } > /tmp/snakegame_mock_install.luau
+          .luau-toolchain/build/luau /tmp/snakegame_mock_install.luau
