@@ -31,6 +31,7 @@ CANONICAL = [
     "0016_server_validated_skins.lua",
     "0017_camera_focus_solo_floor.lua",
     "0018_server_render_cache.lua",
+    "0019_render_cache_recovery.lua",
 ]
 
 
@@ -54,10 +55,10 @@ class CanonicalPatchTests(unittest.TestCase):
         actual = sorted(p.name for p in UPDATES.glob("*.lua"))
         self.assertEqual(actual, CANONICAL)
         numbers = [int(n[:4]) for n in actual]
-        self.assertEqual(numbers, list(range(1, 19)))
+        self.assertEqual(numbers, list(range(1, 20)))
 
     def test_nonempty_and_marked(self) -> None:
-        for i in range(2, 19):
+        for i in range(2, 20):
             with self.subTest(patch=i):
                 code = source(i)
                 self.assertGreater(len(code), 100)
@@ -166,6 +167,16 @@ class CanonicalPatchTests(unittest.TestCase):
         self.assertNotIn('client.Source=revised', cache)
         self.assertIn('camera.Focus=CFrame.new(target)', camera)
         self.assertIn('LocalTransparencyModifier', camera)
+
+    def test_cache_recovery_guards(self) -> None:
+        repair = source(19)
+        self.assertIn("p.Parent~=segments", repair)
+        self.assertIn("food.Parent~=model", repair)
+        self.assertIn("segmentParts[i]=nil", repair)
+        self.assertIn("s.foodPart=nil", repair)
+        self.assertIn("server.Source=old", repair)
+        self.assertIn("server.Source==nextSource", repair)
+        self.assertIn("-- SnakeGame 0018 applied", repair)
 
     def test_render_cache_ref_lifecycle(self) -> None:
         cache = source(18)
