@@ -57,9 +57,9 @@ jobs:
             .luau-toolchain/build/luau-compile "$script" >/dev/null
             count=$((count + 1))
           done
-          test "$count" -eq 20
-          echo "Compiled 18 patch files and 2 embedded bootstrap scripts (syntax only)."
-      - name: Apply and reapply all 18 patches in mocked Studio
+          test "$count" -eq 21
+          echo "Compiled 19 patch files and 2 embedded bootstrap scripts (syntax only)."
+      - name: Apply and reapply all 19 patches in mocked Studio
         shell: bash
         run: |
           set -euo pipefail
