@@ -1,0 +1,118 @@
+SnakeGame — Roblox Studio manual QA gate (NOT YET EXECUTED)
+Historical integration baseline: main 949273e246ba2e3d090ec094fee97e9831bca26b
+Execution baseline: resolve and record the full current main SHA immediately before
+installing patches; do not reuse the historical integration SHA as test evidence.
+Purpose: real Studio/device checks not covered by mock installers.
+Record: Studio version, OS/device, place version, date/time, tester, video/log,
+actual FPS and memory measurement method, result PASS/FAIL/BLOCKED for each case.
+Evidence row: case ID | main SHA | candidate PR head SHA (if applicable) |
+Studio build | place backup ID | device/client count | expected | observed |
+result | Output/log link | screenshot/video link | tester/date.
+Mark BLOCKED if no Studio/device execution occurred; CI success is not PASS.
+
+SETUP
+[ ] Save backup of place; create empty test place, Edit mode (not Play).
+[ ] Confirm no existing SnakeGameServer/Client or GUI from prior installation.
+[ ] Apply updates/0001 through 0018 in ascending order in Command Bar, Edit mode.
+[ ] Check Output after EACH patch; capture first error with number and stack.
+[ ] Verify ServerScriptService/SnakeGameServer, StarterPlayerScripts/SnakeGameClient,
+    ReplicatedStorage/SnakeGame, StarterGui SnakeGameHUD/ModeSelect/SkinSelect.
+[ ] Reapply 0002 through 0018; verify no duplicate scripts, GUIs, remotes or connections.
+    0001 bootstrap is intentionally not part of this reapplication requirement.
+
+SOLO / CLASSIC — PLAY
+[ ] Start with one player. Confirm arena and snake visible; controls WASD/arrows.
+[ ] Eat food: score increases exactly once, length increases once, food respawns.
+[ ] Wall collision: one death, no continued movement/score; restart works.
+[ ] Self collision: death exactly once; no phantom food/segment after restart.
+[ ] Rapid alternating and reverse input: no illegal 180-degree turn or desync.
+[ ] Full board victory: won state displayed; no nil food or endless tick.
+
+CIRCULAR
+[ ] Select ModeCircular, verify server mode and circular bounds; ModeClassic switches back.
+[ ] Food only spawns inside valid circle; boundary collision kills consistently.
+[ ] Win state/score retained when switching modes or restarting.
+[ ] Malformed/oversized/unrecognized remote commands have no gameplay effect.
+[ ] Repeated mode changes obey server cooldown; separate player sessions unaffected.
+
+SKINS / HUD / INPUT
+[ ] Select Classic/Ember/Frost: correct server-authorized skin shown to all clients.
+[ ] Invalid skin command ignored; repeated commands rate limited.
+[ ] Desktop 16:9 and 4:3: HUD visible, readable, no overlap; Explorer edits respected.
+[ ] Mobile portrait and landscape emulator: touch swipe works and UI remains usable.
+[ ] While TextBox focused, swipe/keyboard gameplay input suppressed; after focus restored.
+[ ] Window focus loss/recovery clears stale swipe state; no stuck direction.
+
+MULTIPLAYER / SECURITY
+[ ] Start local server with 2 clients, then 3; each has isolated snake, arena and score.
+[ ] One client's death/restart/mode/skin change does not affect other players.
+[ ] Disconnect/reconnect: session and visuals cleaned up; no orphan parts or GUI.
+[ ] From test client send nil, number, table, long string, unknown command and spam
+    through existing remote; server does not error or grant unauthorized state.
+[ ] Repeat all critical tests with high simulated network latency; capture Output.
+
+PERFORMANCE (MEASURE; DO NOT GUESS)
+[ ] Capture baseline and 5-minute steady-state FPS, CPU frame time, Lua heap and
+    instance count on PC, using Studio MicroProfiler/Stats with methodology logged.
+[ ] Repeat on a real Android device with 6–8 GB RAM; record model, OS, graphics quality,
+    battery/thermal state, median/p95 frame time and peak memory where measurable.
+[ ] Compare idle, active, food-heavy and multiplayer scenes; check memory growth after
+    10 restart cycles and 10 join/leave cycles.
+
+RELEASE GATE
+[ ] Attach reproducible test evidence and failures to issue #22.
+[ ] Distinguish Studio execution from CI mock results.
+[ ] Do not mark gameplay/mobile/multiplayer/performance validated until run.
+
+STUDIO PROCEDURE / EVIDENCE FORMAT
+[ ] Use Studio Test (F5) for single-client gameplay; toggle Client/Server to inspect
+    server-authoritative mode, score and skin. Do not infer server state from UI alone.
+[ ] Use Studio "Server & Clients" (F7) with 2 then 3 clients for isolation;
+    capture server Output and each client Output separately.
+[ ] Use Device Simulator for screen/touch layout only; a simulated mobile viewport
+    is NOT a real Android performance result.
+[ ] Use Network Simulator to record latency, jitter and packet-loss settings;
+    compare against baseline and document actual observed behavior.
+[ ] For each case record: case ID, patch chain SHA, place backup identifier,
+    Studio build, test mode, clients, steps, expected, observed, PASS/FAIL/BLOCKED,
+    Output/error stack, screenshot/video link and issue/PR link.
+
+OPTIONAL 0019 CANDIDATE — PR #25 ONLY (DO NOT APPLY TO MAIN BASELINE)
+[ ] In a disposable COPY of the place, apply 0001–0018 then the exact 0019
+    candidate from PR #25; record its head SHA and confirm all postchecks.
+[ ] In Play, after a snake and food are rendered, inspect the server-side snake
+    model and identify a current segment BasePart and current food BasePart.
+[ ] In a separate controlled run destroy one segment from the server-side model;
+    wait for the next server paint; check whether it is recreated, with correct
+    appearance, position, score and no Output error. Repeat for food.
+[ ] Repeat 10 destroy/recreate cycles for each part type; record instance counts
+    before/after and verify no accumulating duplicates or stale references.
+[ ] Compare candidate against 0018-only baseline. If no stable repro is possible,
+    mark BLOCKED with exact reproduction limitation, never PASS.
+[ ] Reapply 0019 in Edit on the disposable copy; verify idempotence and no duplicate
+    marker/parts/remotes. Test a precheck failure on a fresh copy without 0018;
+    verify the place is unchanged and the error is explicit.
+[ ] No merge approval for 0019 solely from mock assertions or compiler success.
+
+0019 FOLDER OWNERSHIP / LIFECYCLE — STUDIO SERVER TEST (PR #25)
+[ ] Record exact main SHA, PR #25 head SHA, installed patch list and Studio build;
+    test only in a disposable place copy. Baseline 0018-only separately.
+[ ] A: Destroy() the live Segments folder on SERVER during Play; inspect whether
+    descendants are removed and a new folder with exactly expected live parts
+    is created on next paint. Record pre/post Workspace descendants and Output.
+[ ] B: Parent live Segments folder to ServerStorage on SERVER; after paint verify
+    new Segments folder belongs to snake model, no old parts remain visible in
+    Workspace, and old folder remains in ServerStorage until its new owner cleans it.
+[ ] C: Parent live Segments folder to a visible Workspace quarantine; characterize
+    duplicate visuals as a caller ownership-contract violation, not permission
+    for snake code to destroy another system's folder. Record both folder paths.
+[ ] For A/B/C: repeat paint 10 times, verify three segment parts when snake
+    length is three, stable counts, no stale cache, no duplicate food or errors.
+[ ] Repeat with two clients and distinct sessions; ensure recovery does not
+    affect other session models, score, skin, food or mode.
+[ ] Capture server Output, Explorer paths, counts, screenshots and observed
+    PASS/FAIL/BLOCKED per case. Mock tests are not sufficient for a PASS.
+
+REFERENCES (consulted 2026-11-12)
+https://create.roblox.com/docs/studio/testing-modes
+https://create.roblox.com/docs/performance-optimization/microprofiler
