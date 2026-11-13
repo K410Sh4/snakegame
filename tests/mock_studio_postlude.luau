@@ -1,5 +1,5 @@
 
--- Assert the outcome of the consecutive 0001-0018 patch INSTALLERS.
+-- Assert the outcome of the consecutive 0001-0019 patch INSTALLERS.
 local SSS = game:GetService("ServerScriptService")
 local SPS = game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts")
 local SG = game:GetService("StarterGui")
@@ -10,7 +10,7 @@ local client = SPS:FindFirstChild("SnakeGameClient")
 assert(server and client and server.Source and client.Source, "Scripts were not installed")
 assert(RS:FindFirstChild("SnakeGame"), "Remote folder missing")
 assert(WS:FindFirstChild("SnakeGameArena"), "Arena missing")
-for i = 2, 18 do
+for i = 2, 19 do
     local marker = string.format("-- SnakeGame %04d applied", i)
     assert(
         server.Source:find(marker,1,true) or client.Source:find(marker,1,true),
@@ -21,12 +21,14 @@ assert(server.Source:find("local hasModeHandler = true",1,true), "Mode handler n
 assert(server.Source:find("won=s.won==true",1,true), "Victory state lost")
 assert(server.Source:find("skinCommands[command]",1,true), "Skin whitelist lost")
 assert(server.Source:find("segmentParts[i]=p",1,true), "Server render cache missing")
+assert(server.Source:find("p.Parent~=segments",1,true), "Segment cache repair missing")
+assert(server.Source:find("food.Parent~=model",1,true), "Food cache repair missing")
 assert(client.Source:find("camera.Focus=CFrame.new(target)",1,true), "Camera focus missing")
 assert(client.Source:find("UIS.WindowFocusReleased:Connect",1,true), "Mobile focus reset missing")
 assert(SG:FindFirstChild("SnakeGameModeSelect"), "Mode selector missing")
 assert(SG:FindFirstChild("SnakeGameHUD"), "HUD template missing")
 assert(SG:FindFirstChild("SnakeGameSkinSelect"), "Skin selector missing")
-print("[MockStudio] PASS: consecutive installers 0001-0018 and final postchecks")
+print("[MockStudio] PASS: consecutive installers 0001-0019 and final postchecks")
 
 print("MOCK_SNAKE_SERVER_SOURCE_START")
 print(server.Source)
