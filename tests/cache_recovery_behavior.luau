@@ -67,3 +67,50 @@ paint(s)
 assert(s.foodPart and s.foodPart.Parent==model,"food not recreated after nil")
 assert(created==count+1,"food recreation should create one part")
 print("[CacheBehavior] PASS: ten destructive recoveries, stable reuse, shrink, food lifecycle")
+
+-- Regression: losing the entire Segments folder must invalidate every cached part.
+-- The fake Instance model does not cascade Destroy() to children; this test checks
+-- cache ownership and reconstruction, not Roblox engine destruction semantics.
+s.body={{1,1},{2,1},{3,1}}
+paint(s)
+local oldFolder=s.segments
+local oldParts={s.segmentParts[1],s.segmentParts[2],s.segmentParts[3]}
+local beforeFolderRecovery=created
+oldFolder:Destroy()
+paint(s)
+assert(s.segments~=oldFolder and s.segments.Parent==model,
+    "destroyed Segments folder was not replaced")
+assert(#s.segmentParts==3 and created==beforeFolderRecovery+3,
+    "folder loss should recreate exactly three cached parts")
+for i=1,3 do
+    assert(s.segmentParts[i]~=oldParts[i] and s.segmentParts[i].Parent==s.segments,
+        "old cached segment reused after folder loss: "..i)
+end
+local stableAfterFolder=created
+paint(s)
+assert(created==stableAfterFolder,"folder recovery leaked parts on stable repaint")
+
+-- Characterization: external reparenting is NOT destruction.
+-- Do not silently destroy an object another script may have taken ownership of.
+local quarantine=node("Folder")
+local movedFolder=s.segments
+local movedParts={s.segmentParts[1],s.segmentParts[2],s.segmentParts[3]}
+movedFolder.Parent=quarantine
+local beforeMoveRecovery=created
+paint(s)
+assert(s.segments~=movedFolder and s.segments.Parent==model,
+    "reparented Segments folder was not replaced")
+assert(#s.segmentParts==3 and created==beforeMoveRecovery+3,
+    "reparenting should create exactly three replacement segments")
+for i=1,3 do
+    assert(s.segmentParts[i]~=movedParts[i] and s.segmentParts[i].Parent==s.segments,
+        "reparented segment reused: "..i)
+    assert(movedParts[i].Parent==movedFolder and not movedParts[i].Destroyed,
+        "mock changed ownership of externally moved parts: "..i)
+end
+assert(movedFolder.Parent==quarantine and not movedFolder.Destroyed,
+    "reparented folder was destroyed or moved without an ownership policy")
+local afterMoveRecovery=created
+paint(s)
+assert(created==afterMoveRecovery,"reparent recovery leaked parts on stable repaint")
+print("[CacheBehavior] PASS: destroyed folder rebuild, moved folder characterization")
