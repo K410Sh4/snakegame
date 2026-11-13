@@ -1,8 +1,14 @@
 SnakeGame — Roblox Studio manual QA gate (NOT YET EXECUTED)
-Baseline: main 949273e246ba2e3d090ec094fee97e9831bca26b
+Historical integration baseline: main 949273e246ba2e3d090ec094fee97e9831bca26b
+Execution baseline: resolve and record the full current main SHA immediately before
+installing patches; do not reuse the historical integration SHA as test evidence.
 Purpose: real Studio/device checks not covered by mock installers.
 Record: Studio version, OS/device, place version, date/time, tester, video/log,
 actual FPS and memory measurement method, result PASS/FAIL/BLOCKED for each case.
+Evidence row: case ID | main SHA | candidate PR head SHA (if applicable) |
+Studio build | place backup ID | device/client count | expected | observed |
+result | Output/log link | screenshot/video link | tester/date.
+Mark BLOCKED if no Studio/device execution occurred; CI success is not PASS.
 
 SETUP
 [ ] Save backup of place; create empty test place, Edit mode (not Play).
